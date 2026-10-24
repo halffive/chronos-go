@@ -34,7 +34,9 @@
 // A request that got no response returns a [*NetworkError]. When an attempt
 // times out, it matches [ErrTimeout] and also [context.DeadlineExceeded].
 // Cancelling your own context, or reaching its deadline, returns ctx.Err()
-// instead, so check ctx.Err() to tell the two apart.
+// instead, so check ctx.Err() to tell the two apart. [JobsService.Wait] is the
+// exception. At a deadline it returns a [*WaitTimeoutError], which also
+// matches [context.DeadlineExceeded].
 //
 // # Retries and timeouts
 //

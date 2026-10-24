@@ -129,7 +129,7 @@ if apiErr, ok := errors.AsType[*chronos.APIError](err); ok && apiErr.Code == chr
 
 `errors.Is(err, chronos.ErrNotFound)` tests the status, and `ErrUnauthorized` and `ErrRateLimited` work the same way.
 
-A request that got no response returns `*chronos.NetworkError`. When an attempt times out, that error matches `chronos.ErrTimeout` and also `context.DeadlineExceeded`. Cancelling your own context, or reaching its deadline, returns `ctx.Err()` instead, so check `ctx.Err()` to tell the two apart.
+A request that got no response returns `*chronos.NetworkError`. When an attempt times out, that error matches `chronos.ErrTimeout` and also `context.DeadlineExceeded`. Cancelling your own context, or reaching its deadline, returns `ctx.Err()` instead, so check `ctx.Err()` to tell the two apart. `Jobs.Wait` is the exception. At a deadline it returns a `*chronos.WaitTimeoutError`, which also matches `context.DeadlineExceeded`.
 
 ### Retries and timeouts
 
