@@ -153,6 +153,19 @@ if err := webhook.Verify(body, r.Header); err != nil {
 	http.Error(w, "invalid signature", http.StatusUnauthorized)
 	return
 }
+var job chronos.PushedJob
+if err := json.Unmarshal(body, &job); err != nil {
+	http.Error(w, "invalid body", http.StatusBadRequest)
+	return
+}
+// Decode the payload into your own type. JSON null leaves the struct at its zero value.
+var payload struct {
+	Report string `json:"report"`
+}
+if err := json.Unmarshal(job.Payload, &payload); err != nil {
+	http.Error(w, "invalid payload", http.StatusBadRequest)
+	return
+}
 ```
 
 ## Documentation
