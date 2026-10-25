@@ -1,0 +1,14 @@
+{
+  "id": "0192f3a3-0000-7000-8000-000000000004",
+  "account_id": "0192f3a1-0000-7000-8000-000000000002",
+  "job_id": "0192f3a2-0000-7000-8000-000000000003",
+  "status": "failed",
+  "trigger": "system",
+  "started_at": "2026-10-24T22:48:14.977Z",
+  "completed_at": "2026-10-24T22:48:15.108Z",
+  "duration_ms": 112,
+  "result": null,
+  "error": "HTTP 405",
+  "response_code": 405,
+  "created_at": "2026-10-24T22:48:14.977Z"
+}
