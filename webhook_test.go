@@ -4,8 +4,10 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"net/http"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -126,5 +128,50 @@ func TestNewWebhookRejectsBadConfig(t *testing.T) {
 	}
 	if _, err := NewWebhook([]string{webhookSecret}, WithTimestampTolerance(-time.Second)); err == nil {
 		t.Error("negative tolerance: want an error")
+	}
+}
+
+func TestPushedJobDecodesTheBody(t *testing.T) {
+	tests := []struct {
+		name string
+		body string
+		want PushedJob
+	}{
+		{
+			name: "shared vector",
+			body: webhookBody,
+			want: PushedJob{
+				JobID:        "job_xyz",
+				Handler:      new("send-email"),
+				ExecutionID:  webhookDeliveryID,
+				ScheduledFor: time.Date(2026, 1, 15, 10, 0, 0, 0, time.UTC),
+				Attempt:      1,
+				Payload:      json.RawMessage(`{"to":"user@example.com"}`),
+			},
+		},
+		{
+			name: "no handler or payload",
+			body: `{"job_id":"job_xyz","handler":null,"execution_id":"exec_abc123","scheduled_for":"2026-01-15T10:00:00.250Z","attempt":2,"payload":null}`,
+			want: PushedJob{
+				JobID:        "job_xyz",
+				ExecutionID:  webhookDeliveryID,
+				ScheduledFor: time.Date(2026, 1, 15, 10, 0, 0, 250_000_000, time.UTC),
+				Attempt:      2,
+				Payload:      json.RawMessage("null"),
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			dec := json.NewDecoder(strings.NewReader(tt.body))
+			dec.DisallowUnknownFields()
+			var got PushedJob
+			if err := dec.Decode(&got); err != nil {
+				t.Fatal(err)
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("got %+v, want %+v", got, tt.want)
+			}
+		})
 	}
 }

@@ -4,6 +4,7 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -22,6 +23,23 @@ const (
 	headerDeliveryID = "X-Chronos-Delivery-Id"
 	signaturePrefix  = "sha256="
 )
+
+// PushedJob is the body of a push delivery. Decode it after [Webhook.Verify]
+// accepts the request.
+type PushedJob struct {
+	JobID   string  `json:"job_id"`
+	Handler *string `json:"handler"`
+	// ExecutionID equals the X-Chronos-Delivery-Id header. Each attempt gets
+	// a new one.
+	ExecutionID  string    `json:"execution_id"`
+	ScheduledFor time.Time `json:"scheduled_for"`
+	// Attempt starts at 1.
+	Attempt int `json:"attempt"`
+	// Payload is the job's payload as sent. For a job without a payload,
+	// Chronos sends JSON null, which decodes to json.RawMessage("null"), not
+	// nil.
+	Payload json.RawMessage `json:"payload"`
+}
 
 // Webhook verifies the signature on push deliveries. It is safe for
 // concurrent use.

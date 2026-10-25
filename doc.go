@@ -17,14 +17,16 @@
 //	})
 //
 // Resource types use the API's snake_case field names in JSON, so they encode
-// to the objects the REST reference describes. Numbers inside Payload and
-// Result decode as [encoding/json.Number], with the exact digits the API sent.
-// The API reads numbers as 64-bit floats, so send integers above 2^53 as
-// strings. Optional request fields are pointers; nil leaves the field out.
+// to the objects the REST reference describes. In client responses, numbers
+// inside Payload and Result decode as [encoding/json.Number], with the exact
+// digits the API sent. The API reads numbers as 64-bit floats, so send
+// integers above 2^53 as strings. Optional request fields are pointers; nil
+// leaves the field out.
 // Update fields that can be cleared use [Nullable].
 //
-// This package has no worker for pull delivery yet. Use push delivery and
-// check each call with [Webhook.Verify].
+// This package has no worker for pull delivery yet, so use push delivery.
+// Check each delivery with [Webhook.Verify], then decode its body into
+// [PushedJob].
 //
 // # Errors
 //

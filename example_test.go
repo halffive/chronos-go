@@ -2,6 +2,7 @@ package chronos_test
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -164,7 +165,19 @@ func ExampleWebhook_Verify() {
 			http.Error(w, "invalid signature", http.StatusUnauthorized)
 			return
 		}
-		// Decode body and run the job.
+		var job chronos.PushedJob
+		if err := json.Unmarshal(body, &job); err != nil {
+			http.Error(w, "invalid body", http.StatusBadRequest)
+			return
+		}
+		var payload struct {
+			Report string `json:"report"`
+		}
+		if err := json.Unmarshal(job.Payload, &payload); err != nil {
+			http.Error(w, "invalid payload", http.StatusBadRequest)
+			return
+		}
+		log.Printf("job %s, attempt %d: building %s", job.JobID, job.Attempt, payload.Report)
 		w.WriteHeader(http.StatusOK)
 	})
 }
