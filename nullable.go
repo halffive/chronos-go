@@ -47,6 +47,32 @@ func (n Nullable[T]) MarshalJSON() ([]byte, error) {
 	return json.Marshal(n.value)
 }
 
+// UnmarshalJSON makes n null for JSON null and sets n to the decoded value
+// otherwise. A field missing from the input leaves n unchanged.
+func (n *Nullable[T]) UnmarshalJSON(data []byte) error {
+	if string(data) == "null" {
+		*n = Null[T]()
+		return nil
+	}
+	var v T
+	if err := json.Unmarshal(data, &v); err != nil {
+		return err
+	}
+	*n = NewNullable(v)
+	return nil
+}
+
+// Get returns the value and true if n is set. It returns false if n is
+// omitted or null; use [Nullable.IsNull] to tell the two apart.
+func (n Nullable[T]) Get() (T, bool) {
+	return n.value, n.state == nullableSet
+}
+
+// IsNull reports whether n is null.
+func (n Nullable[T]) IsNull() bool {
+	return n.state == nullableNull
+}
+
 func nullableQueryValue(n Nullable[string]) string {
 	switch n.state {
 	case nullableNull:
