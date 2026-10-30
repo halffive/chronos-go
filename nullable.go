@@ -48,14 +48,15 @@ func (n Nullable[T]) MarshalJSON() ([]byte, error) {
 }
 
 // UnmarshalJSON makes n null for JSON null and sets n to the decoded value
-// otherwise. A field missing from the input leaves n unchanged.
+// otherwise. A field missing from the input leaves n unchanged. Numbers
+// inside interface values decode as [encoding/json.Number].
 func (n *Nullable[T]) UnmarshalJSON(data []byte) error {
 	if string(data) == "null" {
 		*n = Null[T]()
 		return nil
 	}
 	var v T
-	if err := json.Unmarshal(data, &v); err != nil {
+	if err := unmarshalNumbers(data, &v); err != nil {
 		return err
 	}
 	*n = NewNullable(v)
