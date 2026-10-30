@@ -223,7 +223,13 @@ func decodeData(data json.RawMessage, out any) error {
 func unmarshalNumbers(data []byte, out any) error {
 	dec := json.NewDecoder(bytes.NewReader(data))
 	dec.UseNumber()
-	return dec.Decode(out)
+	if err := dec.Decode(out); err != nil {
+		return err
+	}
+	if _, err := dec.Token(); err != io.EOF {
+		return errors.New("chronos: unexpected data after the JSON value")
+	}
+	return nil
 }
 
 func (r response) apiError() *APIError {

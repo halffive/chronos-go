@@ -56,6 +56,7 @@ func TestNullableRoundTrips(t *testing.T) {
 		{name: "null", body: `{"description":null,"runs":5}`, null: true},
 		{name: "set", body: `{"description":"nightly","runs":5}`, description: "nightly", set: true},
 		{name: "zero values stay set", body: `{"description":"","runs":0,"stop_at":"2027-01-01T00:00:00Z","payload":{}}`, set: true},
+		{name: "large integers keep their digits", body: `{"runs":5,"payload":{"n":9007199254740993}}`},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -82,5 +83,14 @@ func TestNullableRejectsTheWrongType(t *testing.T) {
 	var params ScheduleUpdateParams
 	if err := json.Unmarshal([]byte(`{"runs":"five"}`), &params); err == nil {
 		t.Error("want an error")
+	}
+}
+
+func TestNullableRejectsTrailingData(t *testing.T) {
+	for _, body := range []string{`"a" "b"`, `"a"]`, `"a"x`} {
+		var n Nullable[string]
+		if err := n.UnmarshalJSON([]byte(body)); err == nil {
+			t.Errorf("UnmarshalJSON(%s) = nil, want an error", body)
+		}
 	}
 }
