@@ -43,7 +43,7 @@ func TestIterateWalksToTheLastPage(t *testing.T) {
 	if api.requestCount() != 2 {
 		t.Errorf("requests = %d, want 2", api.requestCount())
 	}
-	if got := api.requestURI(0); got != "/v1/schedules?page=1&size=100&status=active" {
+	if got := api.requestURI(t, 0); got != "/v1/schedules?page=1&size=100&status=active" {
 		t.Errorf("first page uri = %s", got)
 	}
 }
@@ -108,7 +108,7 @@ func TestEveryIterateWalksPagesWithItsFilters(t *testing.T) {
 				t.Errorf("ids = %v, want [a b]", ids)
 			}
 			for i, uri := range tt.uris {
-				if got := api.requestURI(i); got != uri {
+				if got := api.requestURI(t, i); got != uri {
 					t.Errorf("request %d = %s, want %s", i, got, uri)
 				}
 			}
@@ -138,7 +138,7 @@ func TestIterateKeepsFiltersAndRestartsOnEachRange(t *testing.T) {
 		"/v1/schedules?page=2&search=nightly&size=100",
 	}
 	for i, uri := range want {
-		if got := api.requestURI(i); got != uri {
+		if got := api.requestURI(t, i); got != uri {
 			t.Errorf("request %d = %s, want %s", i, got, uri)
 		}
 	}
@@ -149,7 +149,7 @@ func TestIterateKeepsTheCallersPageSize(t *testing.T) {
 	if _, err := collectIDs(t, c, ScheduleListParams{Size: 5}); err != nil {
 		t.Fatal(err)
 	}
-	if got := api.requestURI(0); got != "/v1/schedules?page=1&size=5" {
+	if got := api.requestURI(t, 0); got != "/v1/schedules?page=1&size=5" {
 		t.Errorf("uri = %s", got)
 	}
 }

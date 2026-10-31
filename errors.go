@@ -29,18 +29,27 @@ var (
 	ErrInvalidID = errors.New("chronos: invalid id")
 	// ErrInvalidWebhook is wrapped by every [Webhook.Verify] failure.
 	ErrInvalidWebhook = errors.New("chronos: invalid webhook")
+	// ErrInvalidWorker is wrapped by every setup error [Worker.Run] returns.
+	ErrInvalidWorker = errors.New("chronos: invalid worker")
+	// ErrTooManyStuckHandlers is returned by [Worker.Run] when 10 handlers have
+	// ignored their timeouts and are still running. Only ending the process
+	// frees them, so exit and let your process manager restart it.
+	ErrTooManyStuckHandlers = errors.New("chronos: too many handlers ignored their timeouts and are still running")
 )
 
 // ErrorCode is the code field of an API error. The API can add codes, so
 // keep a default branch when switching on one.
 type ErrorCode string
 
-// Error codes the schedule, job and execution routes return.
+// Error codes the schedule, job, execution and worker routes return.
 const (
-	ErrorCodeError                  ErrorCode = "error"
-	ErrorCodeBadRequest             ErrorCode = "bad_request"
-	ErrorCodeUnauthorized           ErrorCode = "unauthorized"
-	ErrorCodeForbidden              ErrorCode = "forbidden"
+	ErrorCodeError        ErrorCode = "error"
+	ErrorCodeBadRequest   ErrorCode = "bad_request"
+	ErrorCodeUnauthorized ErrorCode = "unauthorized"
+	ErrorCodeForbidden    ErrorCode = "forbidden"
+	// ErrorCodeInsufficientScope means the API key lacks a scope the route
+	// requires.
+	ErrorCodeInsufficientScope      ErrorCode = "insufficient_scope"
 	ErrorCodeNotFound               ErrorCode = "not_found"
 	ErrorCodeConflict               ErrorCode = "conflict"
 	ErrorCodeValidationError        ErrorCode = "validation_error"

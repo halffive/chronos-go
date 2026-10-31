@@ -142,6 +142,8 @@ Each attempt times out after 30 seconds. Change it with `chronos.WithRequestTime
 
 Any request rejected with 429 is retried, because the API rejects it before doing any work. GET requests are also retried after a network error, a timeout or a 5xx. Writes are not retried in those cases, so a lost response cannot create a schedule twice. Change the retry count with `chronos.WithMaxRequestRetries`.
 
+A `Worker` retries its own requests, so `WithMaxRequestRetries` does not apply to it. Each claim adds the poll wait to the request timeout.
+
 ### Webhooks
 
 For push delivery, verify each request before running the job:
@@ -173,9 +175,48 @@ http.HandleFunc("/chronos", func(w http.ResponseWriter, r *http.Request) {
 
 Decode `job.Payload` into your own struct to read the data you attached to the schedule or job.
 
+### Pull worker
+
+For pull delivery, a `Worker` claims jobs and runs each one in your process. Register a handler for each handler name, then call `Run`, which blocks until its context ends. `sendEmail` stands in for your own code.
+
+```go
+ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+defer stop()
+
+worker := chronos.NewWorker(client)
+worker.Handle("send-email", func(ctx context.Context, job *chronos.ClaimedJob) (map[string]any, error) {
+	var payload struct {
+		To string `json:"to"`
+	}
+	if err := json.Unmarshal(job.Payload, &payload); err != nil {
+		return nil, err
+	}
+	if err := sendEmail(ctx, payload.To); err != nil {
+		return nil, err
+	}
+	return map[string]any{"sent": true}, nil
+})
+
+if err := worker.Run(ctx); err != nil {
+	log.Fatal(err)
+}
+```
+
+Returning an error fails the job, and Chronos retries it while attempts remain. A panic or a result that cannot be encoded to JSON counts as an error. A job can run more than once, so make handlers idempotent, using `job.JobID` as the key.
+
+Chronos stores error text, panic values and results and returns them from its API, and sends error text to your alert channels. Keep secrets and personal data out of them.
+
+Jobs run one at a time. For more throughput, run more workers. Set a stable id in production with `chronos.WithWorkerID`, because the default id is random and adds a new entry to the workers list on each start.
+
+Pass `ctx` to everything your handler calls. It ends at the job's timeout. Go cannot stop a handler that ignores it, so that handler keeps running and holding memory until it returns. The worker reports the timeout at once, then waits up to 30 seconds for the handler to return before its next claim.
+
+When `Run`'s context ends, the worker abandons the claim in flight, lets a running handler finish within its timeout, reports the result and returns `nil`. The handler's `ctx` does not end on shutdown. If a handler ignores its timeout, `Run` waits up to 30 more seconds after reporting it, and the handler keeps running after `Run` returns. The API can still assign a job to the abandoned claim, and Chronos retries that job after its timeout while attempts remain.
+
+`Run` returns an error in four cases: the worker is misconfigured (the error matches `ErrInvalidWorker`), the worker is already running, the API rejects the key with a 401 or with a 403 and `ErrorCodeInsufficientScope`, or too many handlers are stuck. The last case is `ErrTooManyStuckHandlers`, when 10 handlers have ignored their timeouts and are still running. Only ending the process frees them, so exit and let your process manager restart it. It logs every other failure through `slog.Default()` and keeps going, pausing for 60 seconds when the execution quota is used up. Change the logger with `chronos.WithWorkerLogger`.
+
 ### Payload numbers
 
-Numbers inside `Payload` and `Result` decode as `json.Number`, preserving the exact digits the API sent. The API reads numbers as 64-bit floats, so send integers above 2^53 as strings.
+In client responses, numbers inside `Payload` and `Result` decode as `json.Number`, with the exact digits the API sent. `ClaimedJob.Payload` and `PushedJob.Payload` are raw JSON, so the decoder you call sets how numbers decode. The API reads numbers as 64-bit floats, so send integers above 2^53 as strings.
 
 ## Documentation
 

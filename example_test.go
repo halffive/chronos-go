@@ -9,6 +9,8 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	chronos "chronos.sh/go"
@@ -25,6 +27,32 @@ func ExampleNewClient() {
 		log.Fatal(err)
 	}
 	fmt.Println("Connected to", account.Name)
+}
+
+func ExampleWorker() {
+	client, err := chronos.NewClient(os.Getenv("CHRONOS_API_KEY"))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
+	worker := chronos.NewWorker(client)
+	worker.Handle("send-email", func(ctx context.Context, job *chronos.ClaimedJob) (map[string]any, error) {
+		var payload struct {
+			To string `json:"to"`
+		}
+		if err := json.Unmarshal(job.Payload, &payload); err != nil {
+			return nil, err
+		}
+		fmt.Println("sending to", payload.To, "attempt", job.Attempt)
+		return map[string]any{"sent": true}, nil
+	})
+
+	if err := worker.Run(ctx); err != nil {
+		log.Fatal(err)
+	}
 }
 
 func ExampleSchedulesService_Create() {

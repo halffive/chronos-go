@@ -1,0 +1,13 @@
+{
+  "job_id": "0192f3a2-0000-7000-8000-000000000003",
+  "execution_id": "0192f3a3-0000-7000-8000-000000000004",
+  "handler": "send-email",
+  "scheduled_for": "2026-10-24T22:48:14.977Z",
+  "attempt": 1,
+  "timeout": 30,
+  "payload": { "to": "user@example.com" },
+  "schedule": {
+    "id": "0192f3a0-0000-7000-8000-000000000001",
+    "name": "Nightly report"
+  }
+}

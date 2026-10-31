@@ -8,10 +8,11 @@ import (
 
 func TestTypesCoverEveryResponseField(t *testing.T) {
 	tests := map[string]any{
-		"schedule.json":  &Schedule{},
-		"job.json":       &Job{},
-		"execution.json": &Execution{},
-		"account.json":   &Account{},
+		"schedule.json":    &Schedule{},
+		"job.json":         &Job{},
+		"execution.json":   &Execution{},
+		"account.json":     &Account{},
+		"claimed_job.json": &ClaimedJob{},
 	}
 	for name, target := range tests {
 		t.Run(name, func(t *testing.T) {

@@ -24,9 +24,23 @@
 // leaves the field out.
 // Update fields that can be cleared use [Nullable].
 //
-// This package has no worker for pull delivery yet, so use push delivery.
-// Check each delivery with [Webhook.Verify], then decode its body into
-// [PushedJob].
+// For push delivery, check each delivery with [Webhook.Verify], then decode its
+// body into [PushedJob]. For pull delivery, run a [Worker].
+//
+// # Pull worker
+//
+// A [Worker] claims jobs and runs them one at a time until the context passed
+// to [Worker.Run] ends:
+//
+//	worker := chronos.NewWorker(client)
+//	worker.Handle("send-email", func(ctx context.Context, job *chronos.ClaimedJob) (map[string]any, error) {
+//		return map[string]any{"sent": true}, nil
+//	})
+//	err := worker.Run(ctx)
+//
+// A job can run more than once, so make handlers idempotent, using
+// ClaimedJob.JobID as the key. See [Handler] for what happens at a job's timeout
+// and [Worker.Run] for shutdown.
 //
 // # Errors
 //

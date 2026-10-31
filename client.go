@@ -95,8 +95,8 @@ func WithHTTPClient(httpClient *http.Client) Option {
 }
 
 // WithRequestTimeout bounds each request attempt, including reading the
-// response. A context deadline bounds all attempts. Defaults to
-// [DefaultRequestTimeout].
+// response. A context deadline bounds all attempts. A [Worker] claim adds its
+// poll wait to this timeout. Defaults to [DefaultRequestTimeout].
 func WithRequestTimeout(timeout time.Duration) Option {
 	return func(o *options) error {
 		if timeout <= 0 {
