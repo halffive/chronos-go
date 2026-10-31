@@ -71,10 +71,24 @@ func (f *fakeAPI) recordedDelays() []time.Duration {
 	return slices.Clone(f.delays)
 }
 
-func (f *fakeAPI) requestURI(i int) string {
+func (f *fakeAPI) request(t *testing.T, i int) recordedRequest {
+	t.Helper()
 	f.mu.Lock()
 	defer f.mu.Unlock()
-	return f.requests[i].requestURI
+	if i >= len(f.requests) {
+		t.Fatalf("got %d requests, want more than %d", len(f.requests), i)
+	}
+	return f.requests[i]
+}
+
+func (f *fakeAPI) requestURI(t *testing.T, i int) string {
+	t.Helper()
+	return f.request(t, i).requestURI
+}
+
+func (f *fakeAPI) requestBody(t *testing.T, i int) string {
+	t.Helper()
+	return f.request(t, i).body
 }
 
 func (f *fakeAPI) requestCount() int {

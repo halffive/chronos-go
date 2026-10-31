@@ -2,6 +2,7 @@ package chronos
 
 import (
 	"bytes"
+	"cmp"
 	"context"
 	"encoding/json"
 	"errors"
@@ -17,18 +18,22 @@ import (
 )
 
 type apiRequest struct {
-	method string
-	path   string
-	query  url.Values
-	body   any
-	list   bool
+	method        string
+	path          string
+	query         url.Values
+	body          any
+	list          bool
+	allowNullData bool
+	timeout       time.Duration
 }
 
 type preparedRequest struct {
-	method string
-	url    string
-	body   []byte
-	list   bool
+	method        string
+	url           string
+	body          []byte
+	list          bool
+	allowNullData bool
+	timeout       time.Duration
 }
 
 type envelope struct {
@@ -43,11 +48,12 @@ type envelope struct {
 }
 
 type response struct {
-	status   int
-	header   http.Header
-	body     []byte
-	envelope *envelope
-	list     bool
+	status        int
+	header        http.Header
+	body          []byte
+	envelope      *envelope
+	list          bool
+	allowNullData bool
 }
 
 type retrySkippedError struct {
@@ -83,8 +89,23 @@ func (c *Client) do(ctx context.Context, r apiRequest, out any) (*Paging, error)
 	}
 }
 
+func (c *Client) sendOnce(ctx context.Context, r apiRequest, out any) error {
+	req, err := c.prepare(r)
+	if err != nil {
+		return err
+	}
+	_, err = c.send(ctx, req, out)
+	return err
+}
+
 func (c *Client) prepare(r apiRequest) (preparedRequest, error) {
-	req := preparedRequest{method: r.method, url: c.baseURL + r.path, list: r.list}
+	req := preparedRequest{
+		method:        r.method,
+		url:           c.baseURL + r.path,
+		list:          r.list,
+		allowNullData: r.allowNullData,
+		timeout:       cmp.Or(r.timeout, c.timeout),
+	}
 	if len(r.query) > 0 {
 		req.url += "?" + r.query.Encode()
 	}
@@ -105,7 +126,7 @@ func fitsDeadline(ctx context.Context, delay time.Duration) bool {
 }
 
 func (c *Client) send(ctx context.Context, r preparedRequest, out any) (*Paging, error) {
-	attemptCtx, cancel := context.WithTimeout(ctx, c.timeout)
+	attemptCtx, cancel := context.WithTimeout(ctx, r.timeout)
 	defer cancel()
 	transportError := func(err error) error {
 		if ctxErr := ctx.Err(); ctxErr != nil {
@@ -139,11 +160,12 @@ func (c *Client) send(ctx context.Context, r preparedRequest, out any) (*Paging,
 	}
 
 	return response{
-		status:   res.StatusCode,
-		header:   res.Header,
-		body:     raw,
-		envelope: parseEnvelope(raw),
-		list:     r.list,
+		status:        res.StatusCode,
+		header:        res.Header,
+		body:          raw,
+		envelope:      parseEnvelope(raw),
+		list:          r.list,
+		allowNullData: r.allowNullData,
 	}.decode(out)
 }
 
@@ -183,6 +205,9 @@ func (r response) decode(out any) (*Paging, error) {
 	}
 	if r.list && !r.envelope.isList() {
 		return nil, r.invalid(ErrInvalidResponse)
+	}
+	if r.allowNullData && bytes.Equal(r.envelope.Data, []byte("null")) {
+		return r.envelope.Meta.Paging, nil
 	}
 	if err := decodeData(r.envelope.Data, out); err != nil {
 		return nil, r.invalid(err)
