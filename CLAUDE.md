@@ -3,7 +3,7 @@
 Go SDK for the Chronos API, module `chronos.sh/go`, package `chronos`. Public, MIT, standard library only.
 
 - One flat package. Resources hang off `Client` as `*XService` types sharing one `service` struct; transport lives in `request.go` and `retry.go`, unexported.
-- The REST clients match the Node.js SDK (`@chronos.sh/sdk`) on retries (429 for any method; network, timeout and 5xx for GET only), error codes, iteration and webhook checks. Change both together. `Worker` matches the Node.js worker on claims and result reports, with four exceptions: it delays the next claim by up to 30 seconds while a timed-out handler returns, it stops at 10 stuck handlers, it stops on 403 `insufficient_scope`, and it has no option for the 1 second fallback retry delay.
+- The REST clients match the Node.js SDK (`@chronos.sh/sdk`) on retries (429 for any method; network, timeout and 5xx for GET only), error codes, iteration and webhook checks. Change both together. `Worker` matches the Node.js worker on claims and result reports, with four exceptions: it delays the next claim by up to 30 seconds while a timed-out handler returns, it stops at 10 stuck handlers, it stops on 403 `insufficient_scope` from a result report as well as a claim, and it has no option for the 1 second fallback retry delay.
 - JSON field names match the API's snake_case. Optional request fields are pointers; update fields the API can clear use `Nullable[T]` with `omitzero`.
 - Every network method takes `context.Context` first. Never read environment variables. Only `Worker` logs, through `slog`.
 - The API key lives only in the `setHeaders` closure, so printing a `Client` never shows it.
