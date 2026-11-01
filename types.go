@@ -42,11 +42,13 @@ type Delivery struct {
 
 // HTTPDelivery is the endpoint push delivery calls.
 type HTTPDelivery struct {
+	// URL is the delivery endpoint. A key without the resource's write scope
+	// reads its userinfo, query values and fragment masked.
 	URL string `json:"url"`
 	// Method is GET, POST, PUT, PATCH or DELETE.
 	Method string `json:"method"`
-	// Headers are sent with every delivery. The API returns them as stored,
-	// unmasked.
+	// Headers are sent with every delivery. A key without the resource's write
+	// scope reads each value masked. Other callers read the values as stored.
 	Headers map[string]string `json:"headers,omitzero"`
 }
 
