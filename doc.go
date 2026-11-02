@@ -24,8 +24,9 @@
 // leaves the field out.
 // Update fields that can be cleared use [Nullable].
 //
-// For push delivery, check each delivery with [Webhook.Verify], then decode its
-// body into [PushedJob]. For pull delivery, run a [Worker].
+// For push delivery, check each request with [Webhook.Verify]. When
+// [Webhook.IsTestRequest] reports a test request, answer it with a 2xx.
+// Otherwise decode the body into [PushedJob]. For pull delivery, run a [Worker].
 //
 // # Pull worker
 //
