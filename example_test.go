@@ -193,6 +193,10 @@ func ExampleWebhook_Verify() {
 			http.Error(w, "invalid signature", http.StatusUnauthorized)
 			return
 		}
+		if webhook.IsTestRequest(body) {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
 		var job chronos.PushedJob
 		if err := json.Unmarshal(body, &job); err != nil {
 			http.Error(w, "invalid body", http.StatusBadRequest)

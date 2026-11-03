@@ -25,8 +25,10 @@ const (
 )
 
 // PushedJob is the body of a push delivery. Decode it after [Webhook.Verify]
-// accepts the request.
+// accepts the request and [Webhook.IsTestRequest] returns false.
 type PushedJob struct {
+	// Type is always "job".
+	Type    string  `json:"type"`
 	JobID   string  `json:"job_id"`
 	Handler *string `json:"handler"`
 	// ExecutionID equals the X-Chronos-Delivery-Id header. Each attempt gets
@@ -120,6 +122,20 @@ func (w *Webhook) Verify(body []byte, header http.Header) error {
 		}
 	}
 	return invalidWebhook("signature does not match")
+}
+
+// IsTestRequest reports whether a body that [Webhook.Verify] accepted is a test
+// request. The dashboard sends one from the Test button next to a push URL and
+// from a webhook alert channel's Send test button. Answer it with a 2xx without
+// running any work. It returns false for a body that is not a JSON object.
+func (w *Webhook) IsTestRequest(body []byte) bool {
+	var event struct {
+		Type string `json:"type"`
+	}
+	if err := json.Unmarshal(body, &event); err != nil {
+		return false
+	}
+	return event.Type == "test"
 }
 
 func (w *Webhook) withinTolerance(signedAt time.Time) bool {

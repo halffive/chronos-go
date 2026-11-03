@@ -146,7 +146,7 @@ A `Worker` retries its own requests, so `WithMaxRequestRetries` does not apply t
 
 ### Webhooks
 
-For push delivery, verify each request before running the job:
+For push delivery, verify each request. The Test button next to a push URL in the dashboard sends a signed test request with no job in its body, so answer it with a 2xx before you decode the job:
 
 ```go
 webhook, err := chronos.NewWebhook([]string{os.Getenv("CHRONOS_SIGNING_SECRET")})
@@ -162,6 +162,10 @@ http.HandleFunc("/chronos", func(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := webhook.Verify(body, r.Header); err != nil {
 		http.Error(w, "invalid signature", http.StatusUnauthorized)
+		return
+	}
+	if webhook.IsTestRequest(body) {
+		w.WriteHeader(http.StatusOK)
 		return
 	}
 	var job chronos.PushedJob

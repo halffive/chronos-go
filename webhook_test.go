@@ -122,6 +122,39 @@ func TestWebhookZeroToleranceSkipsTheTimestampCheck(t *testing.T) {
 	}
 }
 
+func TestWebhookIsTestRequest(t *testing.T) {
+	testBody := `{"id":"0b7d3c3e-5f0e-4c35-9a8e-2d6f1c0b9a11","type":"test","occurred_at":"2026-01-15T10:00:00.000Z","account_id":"acc_123","data":{}}`
+	jobBody := `{"type":"job","job_id":"job_xyz","handler":"send-email","execution_id":"exec_abc123","scheduled_for":"2026-01-15T10:00:00Z","attempt":1,"payload":{}}`
+	tests := []struct {
+		name  string
+		body  string
+		event string
+		want  bool
+	}{
+		{name: "test request", body: testBody, event: "test", want: true},
+		{name: "test request without the event header", body: testBody, want: true},
+		{name: "test request with a wrong event header", body: testBody, event: "job", want: true},
+		{name: "job delivery", body: jobBody, event: "job", want: false},
+		{name: "invalid JSON", body: `not json`, event: "test", want: false},
+		{name: "not an object", body: `["test"]`, event: "test", want: false},
+	}
+	w := testWebhook(t, []string{webhookSecret})
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			header := webhookHeader(sign(webhookSecret, webhookDeliveryID, webhookTimestamp, tt.body), webhookTimestamp, webhookDeliveryID)
+			if tt.event != "" {
+				header.Set("X-Chronos-Event", tt.event)
+			}
+			if err := w.Verify([]byte(tt.body), header); err != nil {
+				t.Fatal(err)
+			}
+			if got := w.IsTestRequest([]byte(tt.body)); got != tt.want {
+				t.Errorf("IsTestRequest = %t, want %t", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestNewWebhookRejectsBadConfig(t *testing.T) {
 	if _, err := NewWebhook([]string{"", "  "}); err == nil {
 		t.Error("blank secrets: want an error")
@@ -150,9 +183,10 @@ func TestPushedJobDecodesTheBody(t *testing.T) {
 			},
 		},
 		{
-			name: "no handler or payload",
-			body: `{"job_id":"job_xyz","handler":null,"execution_id":"exec_abc123","scheduled_for":"2026-01-15T10:00:00.250Z","attempt":2,"payload":null}`,
+			name: "job type with no handler or payload",
+			body: `{"type":"job","job_id":"job_xyz","handler":null,"execution_id":"exec_abc123","scheduled_for":"2026-01-15T10:00:00.250Z","attempt":2,"payload":null}`,
 			want: PushedJob{
+				Type:         "job",
 				JobID:        "job_xyz",
 				ExecutionID:  webhookDeliveryID,
 				ScheduledFor: time.Date(2026, 1, 15, 10, 0, 0, 250_000_000, time.UTC),
