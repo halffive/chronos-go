@@ -1,5 +1,6 @@
 // Package chronos is the Go client for the Chronos API: recurring schedules
-// and one-off jobs, delivered to your own code.
+// and one-off jobs, delivered to your own code, and heartbeat monitors for
+// jobs that run elsewhere.
 //
 // Create a [Client] once and reuse it:
 //
