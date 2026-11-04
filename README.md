@@ -1,6 +1,6 @@
 # chronos-go
 
-Go client for [Chronos](https://chronos.sh): recurring schedules and one-off jobs, delivered to your own code.
+Go client for [Chronos](https://chronos.sh): recurring schedules and one-off jobs, delivered to your own code, and heartbeat monitors for jobs that run elsewhere.
 
 ```go
 client, err := chronos.NewClient(os.Getenv("CHRONOS_API_KEY"))
@@ -69,7 +69,7 @@ Replace the URL with an endpoint you control. The schedule runs every day at 02:
 
 ## Usage
 
-The client has one service per resource: `Schedules`, `Jobs`, `Executions` and `Account`. Every method takes a `context.Context` first.
+The client has one service per resource: `Schedules`, `Jobs`, `Executions`, `Monitors` and `Account`. Every method takes a `context.Context` first.
 
 ### Optional fields
 
@@ -119,6 +119,26 @@ defer cancel()
 
 job, err := client.Jobs.Wait(ctx, jobID, chronos.JobWaitOptions{})
 ```
+
+### Monitors
+
+A monitor watches a job that runs outside Chronos, such as a cron job on your own server. Create one and give its `PingURL` to the job:
+
+```go
+monitor, err := client.Monitors.Create(ctx, chronos.MonitorCreateParams{
+	Name: "Nightly backup",
+	Cron: new("0 2 * * *"),
+})
+if err != nil {
+	return err
+}
+```
+
+`monitor.PingURL` is a secret. Keep it out of logs, and store it where the job reads its other credentials.
+
+The job reports with one HTTP request and needs no SDK: `curl -fsS "$PING_URL"` on success, or `curl -fsS "$PING_URL/fail"` on failure. `ListPings` and `IteratePings` read what it reported.
+
+Chronos alerts when the job reports a failure, or when no success or fail ping arrives within `GraceSeconds` (default 300) of when it was due.
 
 ### Errors
 

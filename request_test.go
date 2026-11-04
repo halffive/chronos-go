@@ -39,6 +39,21 @@ func TestErrorResponsesMapToAPIError(t *testing.T) {
 			status:   409, code: ErrorCodeScheduleAlreadyPaused, message: "Schedule is already paused",
 		},
 		{
+			name:     "404 monitor not found",
+			response: apiFailure(404, "monitor_not_found", "Monitor not found"),
+			status:   404, code: ErrorCodeMonitorNotFound, message: "Monitor not found", sentinel: ErrNotFound,
+		},
+		{
+			name:     "409 monitor already paused",
+			response: apiFailure(409, "monitor_already_paused", "Monitor is already paused"),
+			status:   409, code: ErrorCodeMonitorAlreadyPaused, message: "Monitor is already paused",
+		},
+		{
+			name:     "409 monitor not paused",
+			response: apiFailure(409, "monitor_not_paused", "Monitor is not paused"),
+			status:   409, code: ErrorCodeMonitorNotPaused, message: "Monitor is not paused",
+		},
+		{
 			name:     "409 idempotency conflict",
 			response: apiFailure(409, "idempotency_key_conflict", "Idempotency key already used"),
 			status:   409, code: ErrorCodeIdempotencyKeyConflict, message: "Idempotency key already used",

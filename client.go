@@ -27,6 +27,7 @@ type Client struct {
 	Schedules  *SchedulesService
 	Jobs       *JobsService
 	Executions *ExecutionsService
+	Monitors   *MonitorsService
 	Account    *AccountService
 
 	baseURL           string
@@ -185,6 +186,7 @@ func NewClient(apiKey string, opts ...Option) (*Client, error) {
 	c.Schedules = (*SchedulesService)(&c.common)
 	c.Jobs = (*JobsService)(&c.common)
 	c.Executions = (*ExecutionsService)(&c.common)
+	c.Monitors = (*MonitorsService)(&c.common)
 	c.Account = (*AccountService)(&c.common)
 	return c, nil
 }

@@ -41,7 +41,7 @@ var (
 // keep a default branch when switching on one.
 type ErrorCode string
 
-// Error codes the schedule, job, execution and worker routes return.
+// Error codes the schedule, job, execution, monitor and worker routes return.
 const (
 	ErrorCodeError        ErrorCode = "error"
 	ErrorCodeBadRequest   ErrorCode = "bad_request"
@@ -73,6 +73,9 @@ const (
 	ErrorCodeIdempotencyKeyConflict ErrorCode = "idempotency_key_conflict"
 	ErrorCodeExecutionNotFound      ErrorCode = "execution_not_found"
 	ErrorCodeExecutionNotRunning    ErrorCode = "execution_not_running"
+	ErrorCodeMonitorNotFound        ErrorCode = "monitor_not_found"
+	ErrorCodeMonitorAlreadyPaused   ErrorCode = "monitor_already_paused"
+	ErrorCodeMonitorNotPaused       ErrorCode = "monitor_not_paused"
 )
 
 // APIError is returned when the API answers with a non-2xx status or
