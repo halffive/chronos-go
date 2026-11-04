@@ -14,6 +14,7 @@ const (
 	scheduleID = "0192f3a0-7c1e-7b3a-9d2e-1f4a5b6c7d8e"
 	jobID      = "0192f3a1-0000-7000-8000-000000000001"
 	execID     = "0192f3a2-0000-7000-8000-000000000002"
+	monitorID  = "0192f3a3-0000-7000-8000-000000000003"
 )
 
 func TestOperationsSendTheDocumentedRequest(t *testing.T) {
@@ -204,6 +205,90 @@ func TestOperationsSendTheDocumentedRequest(t *testing.T) {
 			uri:      "/v1/executions/" + execID,
 		},
 		{
+			name: "monitors create",
+			call: func(ctx context.Context, c *Client) error {
+				_, err := c.Monitors.Create(ctx, MonitorCreateParams{
+					Name:         "Nightly backup",
+					Interval:     &Interval{Value: 1, Unit: IntervalUnitDay},
+					GraceSeconds: new(600),
+				})
+				return err
+			},
+			response: monitorResponse,
+			method:   http.MethodPost,
+			uri:      "/v1/monitors",
+			body:     `{"name":"Nightly backup","interval":{"value":1,"unit":"day"},"grace_seconds":600}`,
+		},
+		{
+			name: "monitors list",
+			call: func(ctx context.Context, c *Client) error {
+				_, err := c.Monitors.List(ctx, MonitorListParams{Page: 2, Size: 50, Status: MonitorStatusLate, Search: "backup"})
+				return err
+			},
+			response: monitorPageResponse,
+			method:   http.MethodGet,
+			uri:      "/v1/monitors?page=2&search=backup&size=50&status=late",
+		},
+		{
+			name:     "monitors get",
+			call:     func(ctx context.Context, c *Client) error { _, err := c.Monitors.Get(ctx, monitorID); return err },
+			response: monitorResponse,
+			method:   http.MethodGet,
+			uri:      "/v1/monitors/" + monitorID,
+		},
+		{
+			name: "monitors update clears description",
+			call: func(ctx context.Context, c *Client) error {
+				_, err := c.Monitors.Update(ctx, monitorID, MonitorUpdateParams{Description: Null[string](), Cron: new("0 3 * * *")})
+				return err
+			},
+			response: monitorResponse,
+			method:   http.MethodPatch,
+			uri:      "/v1/monitors/" + monitorID,
+			body:     `{"description":null,"cron":"0 3 * * *"}`,
+		},
+		{
+			name:     "monitors delete",
+			call:     func(ctx context.Context, c *Client) error { return c.Monitors.Delete(ctx, monitorID) },
+			response: func(*testing.T) fakeResponse { return fakeResponse{status: http.StatusNoContent} },
+			method:   http.MethodDelete,
+			uri:      "/v1/monitors/" + monitorID,
+		},
+		{
+			name:     "monitors pause",
+			call:     func(ctx context.Context, c *Client) error { _, err := c.Monitors.Pause(ctx, monitorID); return err },
+			response: monitorResponse,
+			method:   http.MethodPost,
+			uri:      "/v1/monitors/" + monitorID + "/pause",
+		},
+		{
+			name:     "monitors resume",
+			call:     func(ctx context.Context, c *Client) error { _, err := c.Monitors.Resume(ctx, monitorID); return err },
+			response: monitorResponse,
+			method:   http.MethodPost,
+			uri:      "/v1/monitors/" + monitorID + "/resume",
+		},
+		{
+			name: "monitors rotate ping url",
+			call: func(ctx context.Context, c *Client) error {
+				_, err := c.Monitors.RotatePingURL(ctx, monitorID)
+				return err
+			},
+			response: monitorResponse,
+			method:   http.MethodPost,
+			uri:      "/v1/monitors/" + monitorID + "/ping-url/rotate",
+		},
+		{
+			name: "monitors list pings",
+			call: func(ctx context.Context, c *Client) error {
+				_, err := c.Monitors.ListPings(ctx, monitorID, MonitorPingListParams{Page: 3, Size: 10})
+				return err
+			},
+			response: func(t *testing.T) fakeResponse { return okPage("["+fixture(t, "monitor_ping.json")+"]", 3, 3) },
+			method:   http.MethodGet,
+			uri:      "/v1/monitors/" + monitorID + "/pings?page=3&size=10",
+		},
+		{
 			name:     "account get",
 			call:     func(ctx context.Context, c *Client) error { _, err := c.Account.Get(ctx); return err },
 			response: func(t *testing.T) fakeResponse { return okResponse(fixture(t, "account.json")) },
@@ -285,6 +370,7 @@ func TestResponsesDecodeIntoTypes(t *testing.T) {
 }
 
 func scheduleResponse(t *testing.T) fakeResponse  { return okResponse(fixture(t, "schedule.json")) }
+func monitorResponse(t *testing.T) fakeResponse   { return okResponse(fixture(t, "monitor.json")) }
 func jobResponse(t *testing.T) fakeResponse       { return okResponse(fixture(t, "job.json")) }
 func executionResponse(t *testing.T) fakeResponse { return okResponse(fixture(t, "execution.json")) }
 
@@ -294,6 +380,10 @@ func schedulePageResponse(t *testing.T) fakeResponse {
 
 func jobPageResponse(t *testing.T) fakeResponse {
 	return okPage("["+fixture(t, "job.json")+"]", 1, 1)
+}
+
+func monitorPageResponse(t *testing.T) fakeResponse {
+	return okPage("["+fixture(t, "monitor.json")+"]", 1, 1)
 }
 
 func executionPageResponse(t *testing.T) fakeResponse {

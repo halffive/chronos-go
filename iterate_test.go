@@ -96,6 +96,34 @@ func TestEveryIterateWalksPagesWithItsFilters(t *testing.T) {
 			},
 			uris: []string{"/v1/executions?page=1&schedule_id=null&size=100", "/v1/executions?page=2&schedule_id=null&size=100"},
 		},
+		{
+			name: "monitors",
+			call: func(c *Client) ([]string, error) {
+				var ids []string
+				for m, err := range c.Monitors.Iterate(t.Context(), MonitorListParams{Status: MonitorStatusDown}) {
+					if err != nil {
+						return ids, err
+					}
+					ids = append(ids, m.ID)
+				}
+				return ids, nil
+			},
+			uris: []string{"/v1/monitors?page=1&size=100&status=down", "/v1/monitors?page=2&size=100&status=down"},
+		},
+		{
+			name: "monitor pings",
+			call: func(c *Client) ([]string, error) {
+				var ids []string
+				for p, err := range c.Monitors.IteratePings(t.Context(), monitorID, MonitorPingListParams{}) {
+					if err != nil {
+						return ids, err
+					}
+					ids = append(ids, p.ID)
+				}
+				return ids, nil
+			},
+			uris: []string{"/v1/monitors/" + monitorID + "/pings?page=1&size=100", "/v1/monitors/" + monitorID + "/pings?page=2&size=100"},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

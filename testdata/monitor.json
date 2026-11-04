@@ -1,0 +1,21 @@
+{
+  "id": "0192f3a3-0000-7000-8000-000000000003",
+  "name": "Nightly backup",
+  "description": "Runs on the database host",
+  "cron": "0 2 * * *",
+  "interval": null,
+  "timezone": "Europe/London",
+  "grace_seconds": 300,
+  "status": "down",
+  "ping_url": "https://ping.chronos.sh/k3Jx9Qm2TnV7bRw4YcZ8dHfL",
+  "last_ping": {
+    "kind": "fail",
+    "exit_code": 1,
+    "received_at": "2026-10-25T02:03:10.120Z"
+  },
+  "last_started_at": "2026-10-25T02:00:01.004Z",
+  "next_ping_due_at": "2026-10-26T02:00:00.000Z",
+  "alert_at": "2026-10-26T02:05:00.000Z",
+  "created_at": "2026-10-24T22:48:14.693Z",
+  "updated_at": "2026-10-25T02:03:10.120Z"
+}

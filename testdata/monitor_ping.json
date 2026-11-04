@@ -1,0 +1,10 @@
+{
+  "id": "0192f3a4-0000-7000-8000-000000000004",
+  "kind": "fail",
+  "exit_code": 1,
+  "duration_ms": 189116,
+  "body": "pg_dump: error: connection refused",
+  "method": "POST",
+  "user_agent": "curl/8.7.1",
+  "received_at": "2026-10-25T02:03:10.120Z"
+}
