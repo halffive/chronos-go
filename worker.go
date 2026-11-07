@@ -222,8 +222,8 @@ func hasValidNameLength(name string) bool {
 //
 // Run returns an error before sending any request if the worker is
 // misconfigured, which matches [ErrInvalidWorker], or already running. It also
-// stops and returns the [*APIError] when the API rejects the key with a 401,
-// which matches [ErrUnauthorized], or a 403 with [ErrorCodeInsufficientScope].
+// stops and returns the [*APIError] on a 401, which matches [ErrUnauthorized],
+// and on a 403 with [ErrorCodeInsufficientScope] or [ErrorCodeCredentialNotAccepted].
 // It returns [ErrTooManyStuckHandlers] when 10 handlers have ignored their
 // timeouts and are still running. It logs every other failure and keeps going.
 func (w *Worker) Run(ctx context.Context) error {
@@ -292,15 +292,28 @@ func (w *Worker) jobLog(job *ClaimedJob) *slog.Logger {
 }
 
 func stopRun(ctx context.Context, log *slog.Logger, err error) error {
-	log.Error("chronos: worker stopped; the API rejected the key", "error", err)
+	log.Error(stopMessage(err), "error", err)
 	if ctx.Err() != nil {
 		return nil
 	}
 	return err
 }
 
+func stopMessage(err error) string {
+	switch {
+	case isForbiddenWithCode(err, ErrorCodeCredentialNotAccepted):
+		return "chronos: worker stopped; worker routes accept API keys only"
+	case isForbiddenWithCode(err, ErrorCodeInsufficientScope):
+		return "chronos: worker stopped; API key lacks the workers:run scope"
+	}
+	return "chronos: worker stopped; the API rejected the key"
+}
+
 func stopsWorker(err error) bool {
-	return errors.Is(err, ErrUnauthorized) || isForbiddenWithCode(err, ErrorCodeInsufficientScope)
+	if errors.Is(err, ErrUnauthorized) {
+		return true
+	}
+	return isForbiddenWithCode(err, ErrorCodeInsufficientScope) || isForbiddenWithCode(err, ErrorCodeCredentialNotAccepted)
 }
 
 func isForbiddenWithCode(err error, code ErrorCode) bool {

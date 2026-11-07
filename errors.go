@@ -49,7 +49,10 @@ const (
 	ErrorCodeForbidden    ErrorCode = "forbidden"
 	// ErrorCodeInsufficientScope means the API key lacks a scope the route
 	// requires.
-	ErrorCodeInsufficientScope      ErrorCode = "insufficient_scope"
+	ErrorCodeInsufficientScope ErrorCode = "insufficient_scope"
+	// ErrorCodeCredentialNotAccepted means the route does not accept the
+	// credential's type, such as an OAuth token on a worker route.
+	ErrorCodeCredentialNotAccepted  ErrorCode = "credential_not_accepted"
 	ErrorCodeNotFound               ErrorCode = "not_found"
 	ErrorCodeConflict               ErrorCode = "conflict"
 	ErrorCodeValidationError        ErrorCode = "validation_error"
