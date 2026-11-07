@@ -17,6 +17,10 @@ import (
 	"time"
 )
 
+const maxResponseBytes = 64 << 20
+
+var errResponseTooLarge = fmt.Errorf("%w: response body is larger than %d MiB", ErrInvalidResponse, maxResponseBytes>>20)
+
 type apiRequest struct {
 	method        string
 	path          string
@@ -154,7 +158,10 @@ func (c *Client) send(ctx context.Context, r preparedRequest, out any) (*Paging,
 	if res.StatusCode == http.StatusNoContent && out == nil {
 		return nil, nil
 	}
-	raw, err := io.ReadAll(res.Body)
+	raw, err := io.ReadAll(io.LimitReader(res.Body, maxResponseBytes+1))
+	if len(raw) > maxResponseBytes {
+		return nil, response{status: res.StatusCode, header: res.Header}.invalid(errResponseTooLarge)
+	}
 	if err != nil {
 		return nil, transportError(err)
 	}

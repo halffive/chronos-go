@@ -320,6 +320,43 @@ func TestNullListItemIsInvalid(t *testing.T) {
 	}
 }
 
+func padBody(res fakeResponse, size int) fakeResponse {
+	res.body += strings.Repeat(" ", size-len(res.body))
+	return res
+}
+
+func TestBodyAtSizeLimitDecodes(t *testing.T) {
+	c, _ := newTestClient(t, padBody(jobWithStatus(JobStatusQueued), maxResponseBytes))
+	job, err := c.Jobs.Get(t.Context(), jobID)
+	if err != nil || job.ID != jobID {
+		t.Fatalf("job = %+v, error = %v", job, err)
+	}
+}
+
+func TestBodyOverSizeLimitIsInvalid(t *testing.T) {
+	tests := []struct {
+		name     string
+		response fakeResponse
+	}{
+		{name: "200", response: jobWithStatus(JobStatusQueued)},
+		{name: "500", response: apiFailure(500, "internal_error", "An unknown error occurred")},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			res := padBody(tt.response, maxResponseBytes+1)
+			res.header = map[string]string{"X-Request-Id": "req_big"}
+			c, api := newTestClient(t, res)
+			_, err := c.Jobs.Get(t.Context(), jobID)
+			if !errors.Is(err, ErrInvalidResponse) || !strings.Contains(err.Error(), "larger than 64 MiB") || !strings.Contains(err.Error(), "request id req_big") {
+				t.Errorf("error = %v, want ErrInvalidResponse for an oversized body with the request id", err)
+			}
+			if api.requestCount() != 1 {
+				t.Errorf("requests = %d, want 1", api.requestCount())
+			}
+		})
+	}
+}
+
 func TestRedirectsAreNotFollowed(t *testing.T) {
 	c, api := newTestClient(t, fakeResponse{status: http.StatusMovedPermanently, header: map[string]string{"Location": "/elsewhere"}})
 	_, err := c.Schedules.Update(t.Context(), scheduleID, ScheduleUpdateParams{Name: new("x")})
@@ -328,6 +365,40 @@ func TestRedirectsAreNotFollowed(t *testing.T) {
 	}
 	if api.requestCount() != 1 {
 		t.Errorf("requests = %d, want 1", api.requestCount())
+	}
+}
+
+type failingBodyReader struct{ read, failAfter int }
+
+func (r *failingBodyReader) Read(p []byte) (int, error) {
+	for i := range p {
+		p[i] = ' '
+	}
+	r.read += len(p)
+	if r.read > r.failAfter {
+		return len(p), errors.New("connection reset")
+	}
+	return len(p), nil
+}
+
+type failingBodyTransport struct{ attempts *int }
+
+func (t failingBodyTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	*t.attempts++
+	body := &failingBodyReader{failAfter: maxResponseBytes}
+	return &http.Response{StatusCode: http.StatusOK, Header: http.Header{}, Body: io.NopCloser(body), Request: req}, nil
+}
+
+func TestReadErrorPastSizeLimitIsInvalid(t *testing.T) {
+	attempts := 0
+	c, err := NewClient(testAPIKey, WithHTTPClient(&http.Client{Transport: failingBodyTransport{attempts: &attempts}}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	c.sleep = func(context.Context, time.Duration) error { return nil }
+	_, err = c.Jobs.Get(t.Context(), jobID)
+	if !errors.Is(err, ErrInvalidResponse) || attempts != 1 {
+		t.Errorf("error = %v after %d attempts, want ErrInvalidResponse after 1", err, attempts)
 	}
 }
 

@@ -49,6 +49,9 @@
 // A rejected request returns an [*APIError]. Branch on its Code, or use
 // [errors.Is] with [ErrUnauthorized], [ErrNotFound] or [ErrRateLimited].
 //
+// A response body larger than 64 MiB, whatever the status, returns an error
+// that matches [ErrInvalidResponse] and is not retried.
+//
 // A request that got no response returns a [*NetworkError]. When an attempt
 // times out, it matches [ErrTimeout] and also [context.DeadlineExceeded].
 // Cancelling your own context, or reaching its deadline, returns ctx.Err()

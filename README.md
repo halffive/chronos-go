@@ -154,6 +154,8 @@ if ok && apiErr.Code == chronos.ErrorCodeScheduleAlreadyPaused {
 
 `errors.Is(err, chronos.ErrNotFound)` tests the status. `ErrUnauthorized` and `ErrRateLimited` work the same way.
 
+A response body larger than 64 MiB, whatever the status, returns an error that matches `chronos.ErrInvalidResponse` and is not retried.
+
 A request that got no response returns `*chronos.NetworkError`. When an attempt times out, it matches both `chronos.ErrTimeout` and `context.DeadlineExceeded`. To tell a Chronos timeout from your own context's deadline, check `ctx.Err()` first. `Jobs.Wait` returns `*chronos.WaitTimeoutError` instead when the job is still running at the deadline.
 
 ### Retries and timeouts
