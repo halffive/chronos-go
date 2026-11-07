@@ -21,8 +21,8 @@ var (
 	// ErrTimeout matches a [*NetworkError] for an attempt that timed out.
 	ErrTimeout = errors.New("chronos: request timed out")
 	// ErrInvalidResponse is wrapped when a successful response does not have
-	// the shape the API documents. The message carries the status and request
-	// id.
+	// the shape the API documents, or when any response body is larger than
+	// 64 MiB. The message carries the status and request id.
 	ErrInvalidResponse = errors.New("chronos: invalid response from the API")
 	// ErrInvalidID is returned, before any request, for an id that is empty
 	// or would change the request path.
@@ -79,8 +79,9 @@ const (
 )
 
 // APIError is returned when the API answers with a non-2xx status or
-// "success": false. Read it with [errors.AsType], and test the status with
-// [errors.Is] and [ErrUnauthorized], [ErrNotFound] or [ErrRateLimited].
+// "success": false, unless the body is larger than 64 MiB. Read it with
+// [errors.AsType], and test the status with [errors.Is] and [ErrUnauthorized],
+// [ErrNotFound] or [ErrRateLimited].
 type APIError struct {
 	StatusCode int
 	// Code is empty when the body was not an API error envelope.
