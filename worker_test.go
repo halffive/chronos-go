@@ -626,16 +626,19 @@ func TestRejectedKeyStopsTheWorker(t *testing.T) {
 		name     string
 		response fakeResponse
 		match    func(error) bool
+		stopLog  string
 	}{
 		{
 			name:     "401",
 			response: keyRejected,
 			match:    func(err error) bool { return errors.Is(err, ErrUnauthorized) },
+			stopLog:  "the API rejected the key",
 		},
 		{
 			name:     "401 without an envelope",
 			response: fakeResponse{status: http.StatusUnauthorized, body: "<html>nope</html>"},
 			match:    func(err error) bool { return errors.Is(err, ErrUnauthorized) },
+			stopLog:  "the API rejected the key",
 		},
 		{
 			name:     "missing scope",
@@ -643,6 +646,13 @@ func TestRejectedKeyStopsTheWorker(t *testing.T) {
 			match: func(err error) bool {
 				return isForbiddenWithCode(err, ErrorCodeInsufficientScope) && strings.Contains(err.Error(), "workers:run")
 			},
+			stopLog: "lacks the workers:run scope",
+		},
+		{
+			name:     "credential type not accepted",
+			response: apiFailure(http.StatusForbidden, "credential_not_accepted", "This route does not accept this credential type"),
+			match:    func(err error) bool { return isForbiddenWithCode(err, ErrorCodeCredentialNotAccepted) },
+			stopLog:  "worker routes accept API keys only",
 		},
 	}
 	for _, tt := range tests {
@@ -664,6 +674,9 @@ func TestRejectedKeyStopsTheWorker(t *testing.T) {
 			if got := strings.Count(logs.String(), "\n"); got != 1 {
 				t.Errorf("got %d log lines, want 1: %s", got, logs)
 			}
+			if !strings.Contains(logs.String(), tt.stopLog) {
+				t.Errorf("log %q does not say %q", logs, tt.stopLog)
+			}
 		})
 	}
 }
@@ -675,6 +688,7 @@ func TestRejectedKeyOnReportStopsWithoutAnotherClaim(t *testing.T) {
 	}{
 		{"401", keyRejected},
 		{"missing scope", apiFailure(http.StatusForbidden, "insufficient_scope", "missing scope")},
+		{"credential type not accepted", apiFailure(http.StatusForbidden, "credential_not_accepted", "This route does not accept this credential type")},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
