@@ -25,11 +25,12 @@ const (
 type ExecutionTrigger string
 
 const (
-	// ExecutionTriggerSystem is a job's first attempt.
+	// ExecutionTriggerSystem is the first attempt of a job that became due.
 	ExecutionTriggerSystem ExecutionTrigger = "system"
-	// ExecutionTriggerSystemRetry is a later attempt.
+	// ExecutionTriggerSystemRetry is an automatic retry.
 	ExecutionTriggerSystemRetry ExecutionTrigger = "system_retry"
-	// ExecutionTriggerManual is reserved; the API does not set it yet.
+	// ExecutionTriggerManual is the first attempt after a manual retry or a
+	// schedule trigger.
 	ExecutionTriggerManual ExecutionTrigger = "manual"
 )
 
@@ -40,6 +41,7 @@ type Execution struct {
 	JobID       string           `json:"job_id"`
 	Status      ExecutionStatus  `json:"status"`
 	Trigger     ExecutionTrigger `json:"trigger"`
+	Attempt     int              `json:"attempt"`
 	StartedAt   *time.Time       `json:"started_at"`
 	CompletedAt *time.Time       `json:"completed_at"`
 	DurationMS  *int             `json:"duration_ms"`
