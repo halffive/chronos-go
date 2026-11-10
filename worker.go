@@ -45,7 +45,7 @@ type ClaimedJob struct {
 	ExecutionID  string    `json:"execution_id"`
 	Handler      string    `json:"handler"`
 	ScheduledFor time.Time `json:"scheduled_for"`
-	// Attempt starts at 1.
+	// Attempt starts at 1 and restarts at 1 after a manual retry.
 	Attempt int `json:"attempt"`
 	// Timeout is in seconds.
 	Timeout int `json:"timeout"`

@@ -4,6 +4,7 @@
   "job_id": "0192f3a2-0000-7000-8000-000000000003",
   "status": "failed",
   "trigger": "system",
+  "attempt": 1,
   "started_at": "2026-10-24T22:48:14.977Z",
   "completed_at": "2026-10-24T22:48:15.108Z",
   "duration_ms": 112,

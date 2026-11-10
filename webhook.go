@@ -35,7 +35,7 @@ type PushedJob struct {
 	// a new one.
 	ExecutionID  string    `json:"execution_id"`
 	ScheduledFor time.Time `json:"scheduled_for"`
-	// Attempt starts at 1.
+	// Attempt starts at 1 and restarts at 1 after a manual retry.
 	Attempt int `json:"attempt"`
 	// Payload is the job's payload as sent. For a job without a payload,
 	// Chronos sends JSON null, which decodes to json.RawMessage("null"), not
