@@ -86,7 +86,7 @@ func TestEveryIterateWalksPagesWithItsFilters(t *testing.T) {
 			name: "executions",
 			call: func(c *Client) ([]string, error) {
 				var ids []string
-				for e, err := range c.Executions.Iterate(t.Context(), ExecutionListParams{ScheduleID: Null[string]()}) {
+				for e, err := range c.Executions.Iterate(t.Context(), ExecutionListParams{Origin: JobOriginAPI}) {
 					if err != nil {
 						return ids, err
 					}
@@ -94,7 +94,7 @@ func TestEveryIterateWalksPagesWithItsFilters(t *testing.T) {
 				}
 				return ids, nil
 			},
-			uris: []string{"/v1/executions?page=1&schedule_id=null&size=100", "/v1/executions?page=2&schedule_id=null&size=100"},
+			uris: []string{"/v1/executions?origin=api&page=1&size=100", "/v1/executions?origin=api&page=2&size=100"},
 		},
 		{
 			name: "monitors",

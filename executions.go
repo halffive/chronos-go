@@ -60,14 +60,16 @@ type ExecutionListParams struct {
 	// Page starts at 1.
 	Page int
 	// Size is 1 to 100. Defaults to 20.
-	Size  int
-	JobID string
-	// ScheduleID set to [Null] matches jobs with no schedule: one-off jobs
-	// and jobs whose schedule was deleted.
-	ScheduleID Nullable[string]
+	Size       int
+	JobID      string
+	ScheduleID string
+	Origin     JobOrigin
 	// Handler matches the job's handler name exactly.
 	Handler string
-	Status  ExecutionStatus
+	// Search matches the job name, ignoring case. Spawned jobs keep the
+	// schedule's name from when they were created.
+	Search string
+	Status ExecutionStatus
 	// CreatedBefore keeps executions created at or before this time.
 	CreatedBefore time.Time
 	// CreatedAfter keeps executions created at or after this time.
@@ -79,8 +81,10 @@ func (p ExecutionListParams) query() url.Values {
 	q.setInt("page", p.Page)
 	q.setInt("size", p.Size)
 	q.set("job_id", p.JobID)
-	q.set("schedule_id", nullableQueryValue(p.ScheduleID))
+	q.set("schedule_id", p.ScheduleID)
+	q.set("origin", string(p.Origin))
 	q.set("handler", p.Handler)
+	q.set("search", p.Search)
 	q.set("status", string(p.Status))
 	q.setTime("created_before", p.CreatedBefore)
 	q.setTime("created_after", p.CreatedAfter)
