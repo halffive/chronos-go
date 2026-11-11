@@ -180,7 +180,7 @@ func TestOperationsSendTheDocumentedRequest(t *testing.T) {
 		{
 			name: "executions list with a schedule id",
 			call: func(ctx context.Context, c *Client) error {
-				_, err := c.Executions.List(ctx, ExecutionListParams{ScheduleID: NewNullable(scheduleID), Status: ExecutionStatusTimeout})
+				_, err := c.Executions.List(ctx, ExecutionListParams{ScheduleID: scheduleID, Status: ExecutionStatusTimeout})
 				return err
 			},
 			response: executionPageResponse,
@@ -188,14 +188,14 @@ func TestOperationsSendTheDocumentedRequest(t *testing.T) {
 			uri:      "/v1/executions?schedule_id=" + scheduleID + "&status=timeout",
 		},
 		{
-			name: "executions list without a schedule",
+			name: "executions list by origin and search",
 			call: func(ctx context.Context, c *Client) error {
-				_, err := c.Executions.List(ctx, ExecutionListParams{JobID: jobID, ScheduleID: Null[string]()})
+				_, err := c.Executions.List(ctx, ExecutionListParams{JobID: jobID, Origin: JobOriginAPI, Search: "nightly report"})
 				return err
 			},
 			response: executionPageResponse,
 			method:   http.MethodGet,
-			uri:      "/v1/executions?job_id=" + jobID + "&schedule_id=null",
+			uri:      "/v1/executions?job_id=" + jobID + "&origin=api&search=nightly+report",
 		},
 		{
 			name:     "executions get",

@@ -73,13 +73,3 @@ func (n Nullable[T]) Get() (T, bool) {
 func (n Nullable[T]) IsNull() bool {
 	return n.state == nullableNull
 }
-
-func nullableQueryValue(n Nullable[string]) string {
-	switch n.state {
-	case nullableNull:
-		return "null"
-	case nullableSet:
-		return n.value
-	}
-	return ""
-}
